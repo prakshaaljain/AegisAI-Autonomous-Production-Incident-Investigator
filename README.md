@@ -1,4 +1,4 @@
-# 🛡️ AegisAI — Autonomous Production Incident Investigator
+🛡️ AegisAI — Autonomous Production Incident Investigator
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green?logo=fastapi)
@@ -29,36 +29,27 @@ POST /investigate
 ┌─────────────────────────────────────────────────────────┐
 │                  LangGraph Pipeline                      │
 │                                                         │
-│  ┌──────────────┐    ┌───────────────────┐              │
-│  │detect_anomalies│──▶│correlate_dependencies│           │
-│  │              │    │                   │              │
-│  │ • Error rate │    │ • Log co-occurrence│              │
-│  │ • Z-score    │    │ • Dependency edges│              │
-│  │   metric     │    │ • Causal chain    │              │
-│  │   spikes     │    │                   │              │
-│  └──────────────┘    └─────────┬─────────┘              │
+│  [detect_anomalies] ──▶ [correlate_dependencies]        │
+│   • Error rate spike      • Log co-occurrence           │
+│   • Z-score metric        • Dependency edges            │
+│     spikes                • Causal chain                │
 │                                │                        │
 │                                ▼                        │
-│                     ┌──────────────────┐                │
-│                     │ reason_root_cause│                │
-│                     │                 │                 │
-│                     │  Claude Sonnet  │                 │
-│                     │  • Root cause   │                 │
-│                     │  • Confidence   │                 │
-│                     │  • Timeline     │                 │
-│                     │  • Remediation  │                 │
-│                     └────────┬────────┘                 │
-│                              │                          │
-│                              ▼                          │
-│                     ┌──────────────────┐                │
-│                     │ finalize_report  │                │
-│                     └────────┬────────┘                 │
-└──────────────────────────────┼─────────────────────────┘
+│                    [reason_root_cause]                   │
+│                      Claude Sonnet                      │
+│                      • Root cause                       │
+│                      • Confidence score                 │
+│                      • Timeline                         │
+│                      • Remediation steps                │
+│                                │                        │
+│                                ▼                        │
+│                    [finalize_report]                     │
+└────────────────────────────────┼────────────────────────┘
 │
-┌────────────────┼────────────────┐
-▼                ▼                ▼
-Knowledge Graph     Incident Report    API Response
-(NetworkX)          (Markdown/JSON)   (JSON)
+┌─────────────────┼─────────────────┐
+▼                 ▼                 ▼
+Knowledge Graph      Incident Report    API Response
+(NetworkX)          (Markdown/JSON)      (JSON)
 
 ---
 
@@ -66,26 +57,26 @@ Knowledge Graph     Incident Report    API Response
 AegisAI/
 ├── src/
 │   ├── agent/
-│   │   ├── state.py          # IncidentState TypedDict
-│   │   ├── nodes.py          # 4 pipeline nodes
-│   │   └── graph.py          # LangGraph compilation
+│   │   ├── state.py              # IncidentState TypedDict
+│   │   ├── nodes.py              # 4 pipeline nodes
+│   │   └── graph.py              # LangGraph compilation
 │   ├── api/
-│   │   └── main.py           # FastAPI app + endpoints
+│   │   └── main.py               # FastAPI app + endpoints
 │   ├── graph/
-│   │   └── knowledge_graph.py # NetworkX graph builder
+│   │   └── knowledge_graph.py    # NetworkX graph builder
 │   ├── ingestion/
-│   │   ├── normalizer.py     # Field normalization
-│   │   └── parsers.py        # CloudWatch/Datadog/raw parsers
+│   │   ├── normalizer.py         # Field normalization
+│   │   └── parsers.py            # CloudWatch/Datadog/raw parsers
 │   ├── models/
-│   │   └── schemas.py        # Pydantic request/response models
+│   │   └── schemas.py            # Pydantic request/response models
 │   └── reporter/
-│       └── report.py         # Markdown + JSON report generator
+│       └── report.py             # Markdown + JSON report generator
 ├── tests/
-│   ├── test_ingestion.py     # 20 ingestion tests
-│   └── test_agent_nodes.py   # 15 agent + graph tests
-├── .env.example              # Environment variable template
-├── render.yaml               # Render deployment config
-└── requirements.txt          # Python dependencies
+│   ├── test_ingestion.py         # 20 ingestion tests
+│   └── test_agent_nodes.py       # 15 agent + graph tests
+├── .env.example                  # Environment variable template
+├── render.yaml                   # Render deployment config
+└── requirements.txt              # Python dependencies
 
 ---
 
@@ -200,8 +191,8 @@ Run autonomous root cause analysis on logs and metrics.
   ],
   "remediation": [
     "Increase database connection pool size for the payments service",
-    "Add circuit breaker with exponential backoff on payments → database calls",
-    "Set up alerting on connection pool utilization > 80%"
+    "Add circuit breaker with exponential backoff on payments to database calls",
+    "Set up alerting on connection pool utilization above 80%"
   ],
   "summary": "A database connection pool exhaustion in the payments service triggered a cascade of failures across api-gateway and checkout. The incident lasted approximately 10 seconds before circuit breakers activated.",
   "graph": {
