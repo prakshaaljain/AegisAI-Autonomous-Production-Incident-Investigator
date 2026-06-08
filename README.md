@@ -23,60 +23,62 @@ AegisAI is an AI-powered incident investigation platform that autonomously analy
 ---
 
 ## 🏗️ Architecture
-POST /investigate
-│
-▼
-┌─────────────────────────────────────────────────────────┐
-│                  LangGraph Pipeline                      │
-│                                                         │
-│  [detect_anomalies] ──▶ [correlate_dependencies]        │
-│   • Error rate spike      • Log co-occurrence           │
-│   • Z-score metric        • Dependency edges            │
-│     spikes                • Causal chain                │
-│                                │                        │
-│                                ▼                        │
-│                    [reason_root_cause]                   │
-│                      Claude Sonnet                      │
-│                      • Root cause                       │
-│                      • Confidence score                 │
-│                      • Timeline                         │
-│                      • Remediation steps                │
-│                                │                        │
-│                                ▼                        │
-│                    [finalize_report]                     │
-└────────────────────────────────┼────────────────────────┘
-│
-┌─────────────────┼─────────────────┐
-▼                 ▼                 ▼
-Knowledge Graph      Incident Report    API Response
-(NetworkX)          (Markdown/JSON)      (JSON)
+
+    POST /investigate
+           │
+           ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │                  LangGraph Pipeline                      │
+    │                                                         │
+    │  [detect_anomalies] ──▶ [correlate_dependencies]        │
+    │   • Error rate spike      • Log co-occurrence           │
+    │   • Z-score metric        • Dependency edges            │
+    │     spikes                • Causal chain                │
+    │                                │                        │
+    │                                ▼                        │
+    │                    [reason_root_cause]                   │
+    │                      Claude Sonnet                      │
+    │                      • Root cause                       │
+    │                      • Confidence score                 │
+    │                      • Timeline                         │
+    │                      • Remediation steps                │
+    │                                │                        │
+    │                                ▼                        │
+    │                    [finalize_report]                     │
+    └────────────────────────────────┼────────────────────────┘
+                                     │
+                   ┌─────────────────┼─────────────────┐
+                   ▼                 ▼                 ▼
+          Knowledge Graph      Incident Report    API Response
+           (NetworkX)          (Markdown/JSON)      (JSON)
 
 ---
 
 ## 📁 Project Structure
-AegisAI/
-├── src/
-│   ├── agent/
-│   │   ├── state.py              # IncidentState TypedDict
-│   │   ├── nodes.py              # 4 pipeline nodes
-│   │   └── graph.py              # LangGraph compilation
-│   ├── api/
-│   │   └── main.py               # FastAPI app + endpoints
-│   ├── graph/
-│   │   └── knowledge_graph.py    # NetworkX graph builder
-│   ├── ingestion/
-│   │   ├── normalizer.py         # Field normalization
-│   │   └── parsers.py            # CloudWatch/Datadog/raw parsers
-│   ├── models/
-│   │   └── schemas.py            # Pydantic request/response models
-│   └── reporter/
-│       └── report.py             # Markdown + JSON report generator
-├── tests/
-│   ├── test_ingestion.py         # 20 ingestion tests
-│   └── test_agent_nodes.py       # 15 agent + graph tests
-├── .env.example                  # Environment variable template
-├── render.yaml                   # Render deployment config
-└── requirements.txt              # Python dependencies
+
+    AegisAI/
+    ├── src/
+    │   ├── agent/
+    │   │   ├── state.py              # IncidentState TypedDict
+    │   │   ├── nodes.py              # 4 pipeline nodes
+    │   │   └── graph.py              # LangGraph compilation
+    │   ├── api/
+    │   │   └── main.py               # FastAPI app + endpoints
+    │   ├── graph/
+    │   │   └── knowledge_graph.py    # NetworkX graph builder
+    │   ├── ingestion/
+    │   │   ├── normalizer.py         # Field normalization
+    │   │   └── parsers.py            # CloudWatch/Datadog/raw parsers
+    │   ├── models/
+    │   │   └── schemas.py            # Pydantic request/response models
+    │   └── reporter/
+    │       └── report.py             # Markdown + JSON report generator
+    ├── tests/
+    │   ├── test_ingestion.py         # 20 ingestion tests
+    │   └── test_agent_nodes.py       # 15 agent + graph tests
+    ├── .env.example                  # Environment variable template
+    ├── render.yaml                   # Render deployment config
+    └── requirements.txt              # Python dependencies
 
 ---
 
