@@ -6,8 +6,9 @@ import logging
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from src.models.schemas import InvestigateRequest, InvestigateResponse
 
@@ -31,8 +32,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AegisAI",
-    description="Autonomous Production Incident Investigator powered by LangGraph + Claude.",
-    version="0.1.0",
+    description="Autonomous Production Incident Investigator — LangGraph + Claude.",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -48,7 +49,7 @@ app.add_middleware(
 def root():
     return {
         "name": "AegisAI",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "description": "Autonomous Production Incident Investigator",
         "docs": "/docs",
     }
@@ -60,13 +61,20 @@ def health():
 
 
 @app.post("/investigate", response_model=InvestigateResponse, tags=["Investigation"])
-def investigate(request: InvestigateRequest):
+def investigate(
+    request: InvestigateRequest,
+    report_format: str = Query(default="none", enum=["none", "markdown", "json", "both"]),
+):
     """
     Run autonomous root cause analysis on logs and metrics.
 
     Pipeline: detect_anomalies → correlate_dependencies → reason_root_cause → finalize_report
+
+    Optional ?report_format=markdown|json|both returns a generated report in the response.
     """
     from src.agent.graph import investigation_graph
+    from src.graph.knowledge_graph import build_graph_from_investigation
+    from src.reporter.report import generate_report
 
     if not request.logs and not request.metrics:
         raise HTTPException(
@@ -78,7 +86,7 @@ def investigate(request: InvestigateRequest):
 
     initial_state = {
         "incident_id": request.incident_id,
-        "logs": [l.model_dump() for l in request.logs],
+        "logs":    [l.model_dump() for l in request.logs],
         "metrics": [m.model_dump() for m in request.metrics],
         "anomalies": [],
         "affected_services": [],
@@ -97,12 +105,25 @@ def investigate(request: InvestigateRequest):
     except EnvironmentError as e:
         raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
-        logger.exception(f"Investigation failed for {request.incident_id}")
+        logger.exception(f"Investigation failed: {request.incident_id}")
         raise HTTPException(status_code=500, detail=f"Investigation failed: {str(e)}")
 
-    logger.info(f"Investigation complete: {request.incident_id} | confidence={result['confidence']}")
+    # Build knowledge graph
+    graph = build_graph_from_investigation(result)
+    graph_data = graph.to_dict()
 
-    return InvestigateResponse(
+    # Optionally generate report
+    report_out: dict = {}
+    if report_format != "none":
+        report_out = generate_report(result, graph, fmt=report_format)
+
+    logger.info(
+        f"Investigation complete: {request.incident_id} "
+        f"| confidence={result['confidence']:.0%} "
+        f"| nodes={graph_data['node_count']}"
+    )
+
+    response = InvestigateResponse(
         incident_id=request.incident_id,
         root_cause=result["root_cause"],
         confidence=result["confidence"],
@@ -113,4 +134,28 @@ def investigate(request: InvestigateRequest):
         remediation=result["remediation"],
         summary=result["summary"],
         knowledge_graph_edges=result["knowledge_graph_edges"],
+    )
+
+    # Attach graph + report as extra fields
+    response_dict = response.model_dump()
+    response_dict["graph"] = graph_data
+    if report_out:
+        response_dict["report"] = report_out
+
+    return response_dict
+
+
+@app.get("/investigate/{incident_id}/report", tags=["Investigation"])
+def get_report_markdown(incident_id: str):
+    """
+    Placeholder — in a stateful deployment this would fetch a stored report.
+    Returns usage instructions for now.
+    """
+    return PlainTextResponse(
+        content=(
+            f"# Report for {incident_id}\n\n"
+            "To generate a report, POST to /investigate with "
+            "?report_format=markdown|json|both\n"
+        ),
+        media_type="text/markdown",
     )
