@@ -48,11 +48,13 @@ class TestDetectAnomalies:
         assert any(a["severity"] == "critical" for a in db_anomalies)
 
     def test_metric_spike_detected(self):
-        metrics = [
-            {"timestamp": "2026-06-09T10:00:00Z", "name": "latency_ms", "value": v, "service": "api"}
-            for v in [100, 105, 98, 102, 950]  # last value is a spike
-        ]
-        result = detect_anomalies({"logs": [], "metrics": metrics})
+        # Need enough stable baseline values so the outlier's z-score exceeds 2.5.
+        # 20 stable readings + 1 extreme spike → z-score ≈ 4.5, well above threshold.
+        stable = [{"timestamp": "2026-06-09T10:00:00Z", "name": "latency_ms",
+                   "value": 100, "service": "api"}] * 20
+        spike  = [{"timestamp": "2026-06-09T10:01:00Z", "name": "latency_ms",
+                   "value": 5000, "service": "api"}]
+        result = detect_anomalies({"logs": [], "metrics": stable + spike})
         assert any(a["service"] == "api" for a in result["anomalies"])
 
     def test_stable_metrics_not_flagged(self):

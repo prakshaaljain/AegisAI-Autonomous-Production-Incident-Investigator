@@ -1,9 +1,10 @@
-🛡️ AegisAI — Autonomous Production Incident Investigator
+# 🛡️ AegisAI — Autonomous Production Incident Investigator
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green?logo=fastapi)
 ![LangGraph](https://img.shields.io/badge/LangGraph-0.1-orange)
 ![Claude](https://img.shields.io/badge/Claude-Sonnet_4-purple?logo=anthropic)
+![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 AegisAI is an AI-powered incident investigation platform that autonomously analyzes logs, metrics, and system dependencies to detect anomalies, identify root causes, reconstruct incident timelines, and recommend remediation actions — powered by LangGraph and Claude.
@@ -13,10 +14,10 @@ AegisAI is an AI-powered incident investigation platform that autonomously analy
 ## ✨ Features
 
 - **Autonomous RCA** — LangGraph pipeline runs 4 specialized nodes end-to-end without human intervention
-- **Multi-source ingestion** — Parses CloudWatch, Datadog, and raw JSON log/metric payloads
-- **Knowledge graph** — Builds a NetworkX directed graph of service dependencies and blast radius
-- **AI reasoning** — Claude performs structured root cause analysis with confidence scoring
-- **Incident reports** — Generates full Markdown + JSON reports with timeline, remediation, and Mermaid diagrams
+- **Multi-source ingestion** — Parses CloudWatch, Datadog, and raw JSON log/metric payloads with automatic field normalization
+- **Knowledge graph** — Builds a NetworkX directed graph of service dependencies, blast radius, and critical paths
+- **AI reasoning** — Claude Sonnet performs structured root cause analysis with confidence scoring
+- **Incident reports** — Generates full Markdown + JSON reports with timeline, remediation steps, and embedded Mermaid diagrams
 - **REST API** — FastAPI with Swagger UI at `/docs`
 - **One-click deploy** — `render.yaml` for instant Render deployment
 
@@ -24,61 +25,75 @@ AegisAI is an AI-powered incident investigation platform that autonomously analy
 
 ## 🏗️ Architecture
 
-    POST /investigate
-           │
-           ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │                  LangGraph Pipeline                      │
-    │                                                         │
-    │  [detect_anomalies] ──▶ [correlate_dependencies]        │
-    │   • Error rate spike      • Log co-occurrence           │
-    │   • Z-score metric        • Dependency edges            │
-    │     spikes                • Causal chain                │
-    │                                │                        │
-    │                                ▼                        │
-    │                    [reason_root_cause]                   │
-    │                      Claude Sonnet                      │
-    │                      • Root cause                       │
-    │                      • Confidence score                 │
-    │                      • Timeline                         │
-    │                      • Remediation steps                │
-    │                                │                        │
-    │                                ▼                        │
-    │                    [finalize_report]                     │
-    └────────────────────────────────┼────────────────────────┘
-                                     │
-                   ┌─────────────────┼─────────────────┐
-                   ▼                 ▼                 ▼
-          Knowledge Graph      Incident Report    API Response
-           (NetworkX)          (Markdown/JSON)      (JSON)
+```
+POST /investigate
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                     Ingestion Layer                          │
+│  CloudWatch ──┐                                              │
+│  Datadog   ──▶  normalizer.py → unified log/metric dicts    │
+│  Raw JSON  ──┘                                              │
+└──────────────────────────┬───────────────────────────────────┘
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────────────┐
+│                   LangGraph Pipeline                         │
+│                                                              │
+│  [detect_anomalies] ──▶ [correlate_dependencies]            │
+│   • Error rate spike      • Log co-occurrence               │
+│   • Z-score metric        • Dependency edges                │
+│     spikes                • Causal chain                    │
+│                                │                            │
+│                                ▼                            │
+│                    [reason_root_cause]                       │
+│                      Claude Sonnet                          │
+│                      • Root cause                           │
+│                      • Confidence score                     │
+│                      • Timeline reconstruction              │
+│                      • Remediation steps                    │
+│                                │                            │
+│                                ▼                            │
+│                    [finalize_report]                         │
+└────────────────────────────────┬─────────────────────────────┘
+                                 │
+               ┌─────────────────┼─────────────────┐
+               ▼                 ▼                 ▼
+      Knowledge Graph      Incident Report    API Response
+       (NetworkX)          (Markdown/JSON)      (JSON)
+```
 
 ---
 
 ## 📁 Project Structure
 
-    AegisAI/
-    ├── src/
-    │   ├── agent/
-    │   │   ├── state.py              # IncidentState TypedDict
-    │   │   ├── nodes.py              # 4 pipeline nodes
-    │   │   └── graph.py              # LangGraph compilation
-    │   ├── api/
-    │   │   └── main.py               # FastAPI app + endpoints
-    │   ├── graph/
-    │   │   └── knowledge_graph.py    # NetworkX graph builder
-    │   ├── ingestion/
-    │   │   ├── normalizer.py         # Field normalization
-    │   │   └── parsers.py            # CloudWatch/Datadog/raw parsers
-    │   ├── models/
-    │   │   └── schemas.py            # Pydantic request/response models
-    │   └── reporter/
-    │       └── report.py             # Markdown + JSON report generator
-    ├── tests/
-    │   ├── test_ingestion.py         # 20 ingestion tests
-    │   └── test_agent_nodes.py       # 15 agent + graph tests
-    ├── .env.example                  # Environment variable template
-    ├── render.yaml                   # Render deployment config
-    └── requirements.txt              # Python dependencies
+```
+AegisAI/
+├── src/
+│   ├── agent/
+│   │   ├── state.py              # IncidentState TypedDict
+│   │   ├── nodes.py              # 4 pipeline nodes
+│   │   └── graph.py              # LangGraph compilation
+│   ├── api/
+│   │   └── main.py               # FastAPI app + /investigate endpoint
+│   ├── graph/
+│   │   └── knowledge_graph.py    # NetworkX graph builder + analytics
+│   ├── ingestion/
+│   │   ├── normalizer.py         # Field normalization (logs + metrics)
+│   │   └── parsers.py            # CloudWatch / Datadog / raw parsers
+│   ├── models/
+│   │   └── schemas.py            # Pydantic request/response models
+│   └── reporter/
+│       └── report.py             # Markdown + JSON report generator
+├── tests/
+│   ├── test_ingestion.py         # 37 tests — normalizer + all parsers
+│   ├── test_agent_nodes.py       # 14 tests — anomaly detection + graph
+│   ├── test_knowledge_graph.py   # 37 tests — graph builder + analytics
+│   └── test_reporter.py          # 24 tests — Markdown, JSON, dispatcher
+├── .env.example                  # Environment variable template
+├── render.yaml                   # Render deployment config
+└── requirements.txt
+```
 
 ---
 
@@ -123,49 +138,59 @@ Run autonomous root cause analysis on logs and metrics.
 **Query params:**
 - `report_format` — `none` (default) | `markdown` | `json` | `both`
 
-**Request:**
+**Minimal request (raw JSON format):**
 
-```json
-{
-  "incident_id": "INC-2026-001",
-  "logs": [
-    {
-      "timestamp": "2026-06-09T10:00:00Z",
-      "level": "ERROR",
-      "message": "Database connection timeout after 30s",
-      "service": "payments"
-    },
-    {
-      "timestamp": "2026-06-09T10:00:05Z",
-      "level": "ERROR",
-      "message": "Request to payments failed: upstream timeout",
-      "service": "api-gateway"
-    },
-    {
-      "timestamp": "2026-06-09T10:00:10Z",
-      "level": "CRITICAL",
-      "message": "Payment service unreachable, circuit breaker open",
-      "service": "checkout"
-    }
-  ],
-  "metrics": [
-    {
-      "timestamp": "2026-06-09T10:00:00Z",
-      "name": "error_rate",
-      "value": 0.85,
-      "service": "payments"
-    },
-    {
-      "timestamp": "2026-06-09T10:00:05Z",
-      "name": "latency_ms",
-      "value": 9500,
-      "service": "payments"
-    }
-  ]
-}
+```bash
+curl -X POST https://aegisai.onrender.com/investigate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "incident_id": "INC-2026-001",
+    "logs": [
+      {
+        "timestamp": "2026-06-09T10:00:00Z",
+        "level": "ERROR",
+        "message": "Database connection timeout after 30s",
+        "service": "payments"
+      },
+      {
+        "timestamp": "2026-06-09T10:00:05Z",
+        "level": "ERROR",
+        "message": "Request to payments failed: upstream timeout",
+        "service": "api-gateway"
+      },
+      {
+        "timestamp": "2026-06-09T10:00:10Z",
+        "level": "CRITICAL",
+        "message": "Payment service unreachable, circuit breaker open",
+        "service": "checkout"
+      }
+    ],
+    "metrics": [
+      {
+        "timestamp": "2026-06-09T10:00:00Z",
+        "name": "error_rate",
+        "value": 0.85,
+        "service": "payments"
+      },
+      {
+        "timestamp": "2026-06-09T10:00:05Z",
+        "name": "latency_ms",
+        "value": 9500,
+        "service": "payments"
+      }
+    ]
+  }'
 ```
 
-**Response:**
+**With full report generation:**
+
+```bash
+curl -X POST "https://aegisai.onrender.com/investigate?report_format=both" \
+  -H "Content-Type: application/json" \
+  -d '{ ... }'
+```
+
+**Example response:**
 
 ```json
 {
@@ -193,41 +218,121 @@ Run autonomous root cause analysis on logs and metrics.
   ],
   "remediation": [
     "Increase database connection pool size for the payments service",
-    "Add circuit breaker with exponential backoff on payments to database calls",
+    "Add circuit breaker with exponential backoff on payments-to-database calls",
     "Set up alerting on connection pool utilization above 80%"
   ],
-  "summary": "A database connection pool exhaustion in the payments service triggered a cascade of failures across api-gateway and checkout. The incident lasted approximately 10 seconds before circuit breakers activated.",
+  "summary": "A database connection pool exhaustion in the payments service triggered a cascade of failures across api-gateway and checkout. Circuit breakers eventually activated. Recommend scaling the pool and adding upstream retry limits.",
   "graph": {
     "node_count": 5,
     "edge_count": 4,
     "blast_radius": [
-      {"service": "payments", "impact_score": 9, "is_root_cause": true}
-    ]
+      {"service": "payments", "impact_score": 9, "anomaly_count": 1, "is_root_cause": true},
+      {"service": "api-gateway", "impact_score": 2, "anomaly_count": 0, "is_root_cause": false},
+      {"service": "checkout", "impact_score": 1, "anomaly_count": 0, "is_root_cause": false}
+    ],
+    "critical_path": ["api-gateway", "payments"]
   }
 }
 ```
 
 ---
 
-## 🌐 Live Demo
+## 📥 Ingestion Formats
 
-The API is deployed on Render:
+AegisAI's ingestion layer normalizes three source formats into a unified internal schema. You can pre-parse payloads yourself using the ingestion module, or submit raw JSON directly to `/investigate`.
 
-**Base URL:** `https://aegisai.onrender.com`
+### Raw JSON (default)
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Service info |
-| `/health` | GET | Health check |
-| `/docs` | GET | Swagger UI |
-| `/investigate` | POST | Run RCA investigation |
-| `/investigate/{id}/report` | GET | Fetch stored report |
+The simplest format — submit logs and metrics directly:
+
+```json
+{
+  "logs": [
+    { "timestamp": "2026-06-09T10:00:00Z", "level": "ERROR", "message": "...", "service": "payments" }
+  ],
+  "metrics": [
+    { "timestamp": "2026-06-09T10:00:00Z", "name": "latency_ms", "value": 9500, "service": "payments" }
+  ]
+}
+```
+
+### AWS CloudWatch
+
+**Log Events batch:**
+```json
+{
+  "logGroupName": "prod-payments",
+  "logStreamName": "payments-service",
+  "events": [
+    { "timestamp": 1717920000000, "message": "{\"level\": \"ERROR\", \"message\": \"Timeout\"}" }
+  ]
+}
+```
+
+**CloudWatch Logs Insights results:**
+```json
+{
+  "results": [
+    [
+      { "field": "@timestamp", "value": "2026-06-09T10:00:00Z" },
+      { "field": "@message", "value": "Connection refused" },
+      { "field": "@logStream", "value": "payments-service" }
+    ]
+  ]
+}
+```
+
+**GetMetricData response:**
+```json
+{
+  "MetricDataResults": [
+    {
+      "Id": "cpu",
+      "Label": "CPUUtilization",
+      "Timestamps": ["2026-06-09T10:00:00Z"],
+      "Values": [92.5]
+    }
+  ]
+}
+```
+
+### Datadog
+
+**Log Search API response:**
+```json
+{
+  "data": [
+    {
+      "attributes": {
+        "timestamp": "2026-06-09T10:00:00Z",
+        "status": "error",
+        "message": "Payment failed",
+        "service": "payments",
+        "tags": ["env:prod", "version:1.2"]
+      }
+    }
+  ]
+}
+```
+
+**Metrics Query API response:**
+```json
+{
+  "series": [
+    {
+      "metric": "system.cpu.user",
+      "scope": "service:payments",
+      "pointlist": [[1717920000000, 92.5], [1717920060000, 95.1]]
+    }
+  ]
+}
+```
 
 ---
 
 ## 🕸️ Knowledge Graph
 
-AegisAI builds a directed graph for every incident:
+For every investigation AegisAI builds a directed graph showing service relationships, anomaly locations, and blast radius:
 
 ```mermaid
 graph TD
@@ -250,6 +355,27 @@ graph TD
     style anom_0 fill:#E74C3C,color:#fff
 ```
 
+The graph is exported in three formats:
+- **JSON** — embedded in every `/investigate` response under `graph`
+- **Mermaid** — included in Markdown reports for inline rendering
+- **Graphviz DOT** — included in JSON reports for external tooling
+
+---
+
+## 🌐 Live Demo
+
+The API is deployed on Render:
+
+**Base URL:** `https://aegisai.onrender.com`
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Service info |
+| `/health` | GET | Health check |
+| `/docs` | GET | Swagger UI |
+| `/investigate` | POST | Run RCA investigation |
+| `/investigate/{id}/report` | GET | Fetch stored report |
+
 ---
 
 ## 🧪 Running Tests
@@ -259,11 +385,15 @@ pip install pytest
 pytest tests/ -v
 ```
 
-Expected output:
-tests/test_ingestion.py::TestNormalizeLog::test_basic_fields PASSED
-tests/test_ingestion.py::TestNormalizeLog::test_level_aliases PASSED
+```
+tests/test_ingestion.py::TestNormalizeLog::test_basic_fields        PASSED
+tests/test_ingestion.py::TestNormalizeLog::test_level_aliases        PASSED
 ...
-35 passed in 0.42s
+tests/test_knowledge_graph.py::TestBuildGraphFromInvestigation::...  PASSED
+tests/test_reporter.py::TestGenerateReport::test_fmt_both_returns... PASSED
+
+112 passed in 1.5s
+```
 
 ---
 
@@ -272,10 +402,11 @@ tests/test_ingestion.py::TestNormalizeLog::test_level_aliases PASSED
 | Layer | Technology |
 |-------|-----------|
 | API | FastAPI + Uvicorn |
-| AI Agent | LangGraph + Claude Sonnet |
-| Graph | NetworkX |
-| Ingestion | Custom parsers (CloudWatch, Datadog) |
+| AI Agent | LangGraph + Claude Sonnet 4 |
+| Graph | NetworkX ≥ 3.3 |
+| Ingestion | Custom parsers (CloudWatch, Datadog, raw JSON) |
 | Validation | Pydantic v2 |
+| Tests | pytest |
 | Deployment | Render |
 
 ---
