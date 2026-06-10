@@ -10,9 +10,14 @@ from datetime import datetime
 from collections import defaultdict
 
 import numpy as np
-from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage
+
+try:
+    from langchain_openai import ChatOpenAI
+    _OPENAI_AVAILABLE = True
+except ImportError:
+    _OPENAI_AVAILABLE = False
 
 from .state import IncidentState
 
@@ -22,7 +27,7 @@ logger = logging.getLogger(__name__)
 def _get_llm():
     if os.getenv("ANTHROPIC_API_KEY"):
         return ChatAnthropic(model="claude-sonnet-4-20250514", max_tokens=2048, temperature=0.2)
-    if os.getenv("OPENAI_API_KEY"):
+    if os.getenv("OPENAI_API_KEY") and _OPENAI_AVAILABLE:
         return ChatOpenAI(model="gpt-4o-mini", temperature=0.2, max_tokens=2048)
     raise EnvironmentError("No LLM API key found. Set ANTHROPIC_API_KEY or OPENAI_API_KEY in .env")
 

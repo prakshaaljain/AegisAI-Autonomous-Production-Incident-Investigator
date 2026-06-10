@@ -9,7 +9,7 @@ import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 import networkx as nx
 
@@ -85,7 +85,7 @@ class IncidentKnowledgeGraph:
     # Public build API
     # ------------------------------------------------------------------
 
-    def add_service(self, service: str, metadata: dict | None = None) -> str:
+    def add_service(self, service: str, metadata: Optional[dict] = None) -> str:
         node_id = self._service_node_id(service)
         if not self.G.has_node(node_id):
             self.G.add_node(
