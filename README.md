@@ -1,4 +1,4 @@
-# 🛡️ AegisAI — Autonomous Production Incident Investigator
+# 🛡️ AegisAI – Autonomous Production Incident Investigator
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.111-green?logo=fastapi)
@@ -7,19 +7,34 @@
 ![Tests](https://img.shields.io/badge/tests-112%20passing-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
-AegisAI is an AI-powered incident investigation platform that autonomously analyzes logs, metrics, and system dependencies to detect anomalies, identify root causes, reconstruct incident timelines, and recommend remediation actions — powered by LangGraph and Claude.
+AegisAI is an AI-powered incident investigation platform that autonomously analyzes logs, metrics, and system dependencies to detect anomalies, identify root causes, reconstruct incident timelines, and recommend remediation actions – powered by LangGraph and Claude.
+
+---
+
+## 🌐 Live Demo
+
+**API:** [https://aegisai-4svu.onrender.com](https://aegisai-4svu.onrender.com)
+**Swagger UI:** [https://aegisai-4svu.onrender.com/docs](https://aegisai-4svu.onrender.com/docs)
+
+> ⚠️ Hosted on Render's free tier — first request may take 30–60s to wake up.
+
+---
+
+## 💡 How It Works
+
+When you POST logs and metrics to `/investigate`, AegisAI runs a 4-node LangGraph pipeline entirely autonomously: it first detects statistical anomalies across your services, then correlates dependencies between them to build a causal chain, then hands that context to Claude Sonnet for structured root cause analysis with confidence scoring, and finally assembles a full incident report with timeline, blast radius, and remediation steps — all in a single API call with no human intervention required.
 
 ---
 
 ## ✨ Features
 
-- **Autonomous RCA** — LangGraph pipeline runs 4 specialized nodes end-to-end without human intervention
-- **Multi-source ingestion** — Parses CloudWatch, Datadog, and raw JSON log/metric payloads with automatic field normalization
-- **Knowledge graph** — Builds a NetworkX directed graph of service dependencies, blast radius, and critical paths
-- **AI reasoning** — Claude Sonnet performs structured root cause analysis with confidence scoring
-- **Incident reports** — Generates full Markdown + JSON reports with timeline, remediation steps, and embedded Mermaid diagrams
-- **REST API** — FastAPI with Swagger UI at `/docs`
-- **One-click deploy** — `render.yaml` for instant Render deployment
+- **Autonomous RCA** – LangGraph pipeline runs 4 specialized nodes end-to-end without human intervention
+- **Multi-source ingestion** – Parses CloudWatch, Datadog, and raw JSON log/metric payloads with automatic field normalization
+- **Knowledge graph** – Builds a NetworkX directed graph of service dependencies, blast radius, and critical paths
+- **AI reasoning** – Claude Sonnet performs structured root cause analysis with confidence scoring
+- **Incident reports** – Generates full Markdown + JSON reports with timeline, remediation steps, and embedded Mermaid diagrams
+- **REST API** – FastAPI with Swagger UI at `/docs`
+- **One-click deploy** – `render.yaml` for instant Render deployment
 
 ---
 
@@ -34,9 +49,9 @@ POST /investigate
 │  CloudWatch ──┐                                              │
 │  Datadog   ──▶  normalizer.py → unified log/metric dicts    │
 │  Raw JSON  ──┘                                              │
-└──────────────────────────┬───────────────────────────────────┘
-                           │
-                           ▼
+└──────────────────────────────┬───────────────────────────────┘
+                               │
+                               ▼
 ┌──────────────────────────────────────────────────────────────┐
 │                   LangGraph Pipeline                         │
 │                                                              │
@@ -86,10 +101,10 @@ AegisAI/
 │   └── reporter/
 │       └── report.py             # Markdown + JSON report generator
 ├── tests/
-│   ├── test_ingestion.py         # 37 tests — normalizer + all parsers
-│   ├── test_agent_nodes.py       # 14 tests — anomaly detection + graph
-│   ├── test_knowledge_graph.py   # 37 tests — graph builder + analytics
-│   └── test_reporter.py          # 24 tests — Markdown, JSON, dispatcher
+│   ├── test_ingestion.py         # 37 tests – normalizer + all parsers
+│   ├── test_agent_nodes.py       # 14 tests – anomaly detection + graph
+│   ├── test_knowledge_graph.py   # 37 tests – graph builder + analytics
+│   └── test_reporter.py          # 24 tests – Markdown, JSON, dispatcher
 ├── .env.example                  # Environment variable template
 ├── render.yaml                   # Render deployment config
 └── requirements.txt
@@ -129,19 +144,19 @@ Visit **http://localhost:8000/docs** for the interactive Swagger UI.
 
 ---
 
-## 🔌 API Usage
+## 📌 API Usage
 
 ### `POST /investigate`
 
 Run autonomous root cause analysis on logs and metrics.
 
 **Query params:**
-- `report_format` — `none` (default) | `markdown` | `json` | `both`
+- `report_format` – `none` (default) | `markdown` | `json` | `both`
 
 **Minimal request (raw JSON format):**
 
 ```bash
-curl -X POST https://aegisai.onrender.com/investigate \
+curl -X POST https://aegisai-4svu.onrender.com/investigate \
   -H "Content-Type: application/json" \
   -d '{
     "incident_id": "INC-2026-001",
@@ -185,7 +200,7 @@ curl -X POST https://aegisai.onrender.com/investigate \
 **With full report generation:**
 
 ```bash
-curl -X POST "https://aegisai.onrender.com/investigate?report_format=both" \
+curl -X POST "https://aegisai-4svu.onrender.com/investigate?report_format=both" \
   -H "Content-Type: application/json" \
   -d '{ ... }'
 ```
@@ -243,7 +258,7 @@ AegisAI's ingestion layer normalizes three source formats into a unified interna
 
 ### Raw JSON (default)
 
-The simplest format — submit logs and metrics directly:
+The simplest format – submit logs and metrics directly:
 
 ```json
 {
@@ -356,48 +371,13 @@ graph TD
 ```
 
 The graph is exported in three formats:
-- **JSON** — embedded in every `/investigate` response under `graph`
-- **Mermaid** — included in Markdown reports for inline rendering
-- **Graphviz DOT** — included in JSON reports for external tooling
+- **JSON** – embedded in every `/investigate` response under `graph`
+- **Mermaid** – included in Markdown reports for inline rendering
+- **Graphviz DOT** – included in JSON reports for external tooling
 
 ---
 
-## 🌐 Live Demo
-
-The API is deployed on Render:
-
-**Base URL:** `https://aegisai.onrender.com`
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Service info |
-| `/health` | GET | Health check |
-| `/docs` | GET | Swagger UI |
-| `/investigate` | POST | Run RCA investigation |
-| `/investigate/{id}/report` | GET | Fetch stored report |
-
----
-
-## 🧪 Running Tests
-
-```bash
-pip install pytest
-pytest tests/ -v
-```
-
-```
-tests/test_ingestion.py::TestNormalizeLog::test_basic_fields        PASSED
-tests/test_ingestion.py::TestNormalizeLog::test_level_aliases        PASSED
-...
-tests/test_knowledge_graph.py::TestBuildGraphFromInvestigation::...  PASSED
-tests/test_reporter.py::TestGenerateReport::test_fmt_both_returns... PASSED
-
-112 passed in 1.5s
-```
-
----
-
-## 🛠️ Tech Stack
+## 🌐 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -406,15 +386,15 @@ tests/test_reporter.py::TestGenerateReport::test_fmt_both_returns... PASSED
 | Graph | NetworkX ≥ 3.3 |
 | Ingestion | Custom parsers (CloudWatch, Datadog, raw JSON) |
 | Validation | Pydantic v2 |
-| Tests | pytest |
+| Tests | pytest (112 passing) |
 | Deployment | Render |
 
 ---
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE)
+MIT – see [LICENSE](LICENSE)
 
 ---
 
-*Built with ❤️ using [LangGraph](https://github.com/langchain-ai/langgraph) and [Claude](https://anthropic.com)*
+*Built with ❤ using [LangGraph](https://github.com/langchain-ai/langgraph) and [Claude](https://anthropic.com)*
